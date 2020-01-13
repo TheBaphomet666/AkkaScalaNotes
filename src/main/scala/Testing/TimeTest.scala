@@ -1,5 +1,0 @@
-package Testing
-
-class TimeTest {
-
-}
