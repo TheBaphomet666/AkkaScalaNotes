@@ -25,6 +25,14 @@ with BeforeAndAfterAll{
         checkout ! Checkout(item, cc)
       }
     }
+    "freak out if payment is denied" in {
+    val item = "cool Item"
+    val cc = "00000-123-123123-123"
+      EventFilter[RuntimeException](occurrences = 1) intercept {
+        val checkout = system.actorOf(Props[CheckoutActor])
+        checkout ! Checkout(item, cc)
+      }
+    }
   }
 }
   object InterceptingLogsSpec {
@@ -51,7 +59,7 @@ with BeforeAndAfterAll{
         case PaymentAccepted =>
           fulfillmentManager ! DispatchOrder(item)
           context.become(pendingFulfillment(item))
-        case PaymentDenied =>
+        case PaymentDenied =>  throw new RuntimeException("i cant handle this")
       }
       def pendingFulfillment(item: String) : Receive = {
         case OrderConfirmed => context.become(awaitingCheckout)
@@ -70,7 +78,9 @@ with BeforeAndAfterAll{
       var orderId = 0
       override def receive: Receive = {
         case DispatchOrder(item: String)=>
-          orderId +=1
+          orderId += 1
+
+          Thread.sleep(300 )
           log.info(s"Order $orderId for item $item has been dispatched")
           sender() ! OrderConfirmed
       }
